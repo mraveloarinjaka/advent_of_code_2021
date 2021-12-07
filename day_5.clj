@@ -27,14 +27,16 @@
   (cond
     (= x1 x2) #_> (for [y (range (min y1 y2) (+ 1 (max y1 y2)))] [x1 y])
     (= y1 y2) #_> (for [x (range (min x1 x2) (+ 1 (max x1 x2)))] [x y1])
-    :else (let [min1 (sort [[x1 y1] [x2 y2]])]
-            [])))
+    :else (let [vx (- x2 x1)
+                dx (if (< 0 vx) 1 -1)
+                vy (- y2 y1)
+                dy (if (< 0 vy) 1 -1)
+                new-starting-point [(+ x1 dx) (+ y1 dy)]]
+            (conj (expand-line [new-starting-point [x2 y2]]) [x1 y1]))))
 
 #_ (expand-line [[9 4] [3 4]])
-
-#_ (let [result (expand-line [[9 7] [7 9]])]
-     (prn "expanded line: " result)
-     (clojure.test/is (= result [[9 7] [8 8] [7 9]])))
+#_ (expand-line [[9 7] [7 9]])
+#_ (expand-line [[9 7] [5 9]])
 
 (defn parse-input
   [input-to-parse]
