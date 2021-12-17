@@ -54,10 +54,7 @@
 
 (defn lowest-neighboring-point
   [heightmap neighbors]
-  ;(prn heightmap)
-  (apply min (map #(:height (get heightmap %)) neighbors))
-  ;(map #(:height (get heightmap %)) neighbors)
-  )
+  (apply min (map #(:height (get heightmap %)) neighbors)))
 
 (defn find-neighbors-lowest
   [heightmap [[x y] info]]
@@ -81,17 +78,56 @@
       xf (comp (map (partial find-neighbors-lowest heightmap))
                (filter lowest?)
                (map ->risk-level))]
-  (transduce xf + 0 heightmap))
+  (transduce xf conj heightmap))
 
-(let [input (->> sample-input
-                     ;(slurp "resources\\day_9_input.txt")
-                     parse-input
-                     ->input)
+(defn get-height
+  [heightmap point]
+  (let [{:keys [height]} (get heightmap point)]
+    height))
+
+(defn potential-basin-neighbor?
+  [reference-height height]
+  (and (not= height 9)
+       (< reference-height height)))
+
+(defn ->basin
+  [heightmap starting-point]
+  (loop [to-process [starting-point] 
+         processed #{}
+         basin #{}]
+    ;(prn to-process "-" processed "-" basin)
+    (if (seq to-process)
+      (let [[current-point & remaining-to-process] to-process
+            {:keys [neighbors height]} (get heightmap current-point)
+            potential-basin-neighbors (set (filter #(potential-basin-neighbor? height (get-height heightmap %)) neighbors))
+            basin-neighbors (clojure.set/difference potential-basin-neighbors processed)
+            updated-processed (clojure.set/union processed #{current-point})
+            updated-basin (clojure.set/union basin #{current-point} basin-neighbors)
+            basin-neighbors-to-process (clojure.set/difference basin-neighbors (set remaining-to-process))
+            updated-remaining-to-process (concat remaining-to-process basin-neighbors-to-process)]
+        ;{:potential-basin-neighbors potential-basin-neighbors
+        ; :basin-neighbors basin-neighbors
+        ; :updated-processed updated-processed
+        ; :updated-basin updated-basin
+        ; :updated-remaining-to-process updated-remaining-to-process}
+        (recur updated-remaining-to-process updated-processed updated-basin))
+      basin)))
+
+(let [input (->> (slurp "resources\\day_9_input.txt")
+                 ;sample-input
+                 parse-input
+                 ->input)
       heightmap (->> input
                      :heightmap)
       xf-lowests (comp (map (partial find-neighbors-lowest heightmap))
-                      (filter lowest?)
-                      )]
-  (->> {:input input
-        :lowests (transduce xf-lowests conj heightmap)}
-       :lowests))
+                       (filter lowest?)
+                       (map first))
+      xf-basin (comp xf-lowests
+                     (map #(->basin heightmap %)))
+      basins (transduce xf-basin conj heightmap)]
+  (->> basins
+       (map count)
+       (sort >)
+       (take 3)
+       (reduce *)))
+
