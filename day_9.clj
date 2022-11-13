@@ -70,15 +70,17 @@
   [[[x y] height lowest]]
   (inc height))
 
-(let [heightmap (->> sample-input
-                     ;(slurp "resources\\day_9_input.txt")
+(let [heightmap (->> ;sample-input
+                     (slurp "resources\\day_9_input.txt")
                      parse-input
                      ->input
                      :heightmap)
       xf (comp (map (partial find-neighbors-lowest heightmap))
                (filter lowest?)
                (map ->risk-level))]
-  (transduce xf conj heightmap))
+  ;(transduce xf conj heightmap)
+  (transduce xf + heightmap)
+  )
 
 (defn get-height
   [heightmap point]
